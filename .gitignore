@@ -1,3 +1,12 @@
 node_modules/
 .vs_code/
 .vscode/
+
+# Household data. The repo is public. Backup is a copy of this file.
+foodPlanner.db
+foodPlanner.db-journal
+foodPlanner.db-wal
+foodPlanner.db-shm
+
+# TypeScript build output. `npm run dev` recreates it.
+dist/

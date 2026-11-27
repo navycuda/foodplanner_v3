@@ -7,7 +7,7 @@
   "license": "AGPL-version-3.0",
   "private": false,
   "engines": {
-    "node": ">= 14.0.0",
+    "node": ">=22",
     "npm": ">= 6.0.0"
   },
   "homepage": "",
@@ -25,12 +25,13 @@
   "contributors": [],
   "scripts": {
     "dev": "tsc && node dist/server.js",
-    "test": ""
+    "test": "tsc && node dist/math.test.js && node dist/allocate.test.js && node dist/consume.test.js"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.6.10"
+    "@types/node": "^26.6.10",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "better-sqlite3": "^13.2.0",

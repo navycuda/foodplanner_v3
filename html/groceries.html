@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="stylesheet" href="css/styles.css">
-  <script type="module" src="js/common.js" defer></script>
   <script type="module" src="js/groceries.js" defer></script>
   <title>Food Planner - Groceries</title>
 </head>
@@ -20,14 +19,82 @@
       <a href="/recipes">Recipes</a>
     </nav>
 
+    <section id="inventory">
+      <h2>Inventory</h2>
+      <p class="note">What's in the house. Prices are CAD. A stock count is the final number: it adds or removes stock to match what you counted.</p>
 
+      <label>
+        Show
+        <select id="location_filter">
+          <option value="">Everywhere</option>
+          <option value="pantry">Pantry</option>
+          <option value="fridge">Fridge</option>
+          <option value="freezer">Freezer</option>
+        </select>
+      </label>
 
+      <p id="inventory_error" class="error" hidden></p>
+      <div id="item_list">
+        <p class="note">Loading…</p>
+      </div>
 
+      <h3>Add an item</h3>
+      <form id="add_item" class="form" autocomplete="off">
+        <label>Name
+          <input name="name" required maxlength="80" autocapitalize="words">
+        </label>
+        <label>Unit
+          <select name="unit">
+            <option value="g">Grams</option>
+            <option value="piece">Pieces</option>
+          </select>
+        </label>
+        <label data-piece-field hidden>Grams per piece
+          <input name="grams_per_piece" type="number" min="0" step="any" inputmode="decimal" placeholder="60">
+        </label>
+        <label>kcal per 100 g
+          <input name="kcal_per_100g" type="number" min="0" step="any" inputmode="decimal" required placeholder="143">
+        </label>
+        <label>Min stock
+          <input name="min_stock" type="number" min="0" step="any" inputmode="decimal">
+        </label>
+        <label>Max stock
+          <input name="max_stock" type="number" min="0" step="any" inputmode="decimal">
+        </label>
+        <label>Shelf life (days)
+          <input name="shelf_life_days" type="number" min="1" step="1" inputmode="numeric">
+        </label>
+        <label>Notes
+          <input name="notes" maxlength="200">
+        </label>
+        <button type="submit">Add item</button>
+      </form>
+    </section>
 
-
-
-
-
+    <section id="shopping">
+      <h2>Shopping</h2>
+      <p class="note">From today forward: what the plan cannot cover, and anything under its minimum, topped up toward the maximum. Prices are CAD from the latest store purchase. Homestead food has no price.</p>
+      <p id="shopping_error" class="error" hidden></p>
+      <p id="shopping_total"></p>
+      <div id="shopping_list"></div>
+      <button type="button" id="shopping_generate">Update from the plan</button>
+      <h3>Add an extra</h3>
+      <form id="shopping_add" class="form" autocomplete="off">
+        <label>Name
+          <input name="name" required maxlength="80">
+        </label>
+        <label>Quantity
+          <input name="quantity" type="number" min="0" step="any" inputmode="decimal" required>
+        </label>
+        <label>Unit
+          <select name="unit">
+            <option value="g">Grams</option>
+            <option value="piece">Pieces</option>
+          </select>
+        </label>
+        <button type="submit">Add to the list</button>
+      </form>
+    </section>
   </main>
 </body>
 </html>

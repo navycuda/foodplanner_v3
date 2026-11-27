@@ -1,2 +1,0 @@
-console.log('groceries');
-export {};
