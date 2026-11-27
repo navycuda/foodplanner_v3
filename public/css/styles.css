@@ -1,0 +1,319 @@
+:root{
+  --bg:#f5f1e9;
+  --card:#fffdf8;
+  --ink:#302d29;
+  --muted:#817a70;
+  --accent:#b76545;
+  --green:#70836a;
+  --line:#ddd5c9;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+}
+
+main{
+  max-width:100%;
+  margin:auto;
+  padding:24px;
+}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  gap:15px;
+  margin-bottom:22px;
+}
+
+
+h1{
+  margin:5px 0;
+}
+h2{
+  margin: 0 0 1rem 0;
+  border-bottom: 2px solid var(--ink);
+}
+h3{
+  margin: 0;
+}
+h4{
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 100;
+  color: var(--muted);
+}
+
+a,button{
+  color: inherit;
+  padding:10px 14px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--card);
+  font-weight:700;
+  text-decoration: none;
+}
+
+nav{
+  display:flex;
+  gap:5px;margin:18px 0;
+  background:#e9e2d8;
+  padding:4px;
+  border-radius:10px;
+  width:max-content;
+}
+
+nav a{
+  border:0;
+  background:transparent;
+}
+
+nav a:hover:not(.active){
+  background-color: #00000010;
+}
+
+nav a.active{
+  background:white;
+}
+
+
+section{
+  width: 100%;
+  background-color: var(--card);
+  border-radius: 1rem;
+  border: 1px solid var(--muted);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.days{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+
+
+planner-day{
+  background-color: var(--bg);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+}
+
+
+
+
+
+
+/* 
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.stat,.panel,.side{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+
+.stat{
+  padding:16px;
+}
+
+.label{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.value{
+  font-size:25px;
+  font-weight:850;
+  margin:5px 0;
+}
+
+.layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 300px;
+  gap:18px;
+}
+
+.panel{
+  overflow:hidden;
+  margin-bottom:18px;
+}
+
+.head{
+  padding:15px 18px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.week{
+  margin:14px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  overflow:hidden;
+}
+
+.weektitle{
+  padding:12px;
+  background:#f1ece4;
+  font-weight:800;
+  display:flex;
+  justify-content:space-between;
+  gap:10px
+}
+
+.days{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(150px,1fr));
+  overflow-x:auto;
+}
+
+.day{
+  min-width:150px;
+  border-right:1px solid var(--line);
+}
+
+.dayhead{
+  padding:10px;
+  border-bottom:1px solid var(--line);
+}
+
+.dayname{
+  font-size:12px;
+  font-weight:850;
+  text-transform:uppercase;
+}
+
+.meal{
+  padding:11px;
+  border-bottom:1px dashed var(--line);
+  min-height:120px;
+}
+
+.type{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+  font-weight:850;
+}
+
+.mealname{
+  font-weight:850;
+  margin:4px 0;
+}
+.portion{
+  font-size:11px;
+  line-height:1.55;
+}
+
+.portion b{
+  color:var(--accent);
+}
+.snack .mealname{
+  color:var(--green);
+}
+.daily{
+  background:#faf6ef;
+  padding:9px 10px;
+  font-size:11px;
+  font-weight:800;
+  display:flex;
+  justify-content:space-between;
+  gap:4px;
+}
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.table th,.table td{
+  padding:11px 13px;
+  border-bottom:1px solid #eee8df;
+  text-align:left;
+  font-size:13px;
+}
+
+.table th{
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+
+.table td:last-child,.table th:last-child{
+  text-align:right;
+}
+
+.tag{
+  font-size:10px;
+  text-transform:uppercase;
+  color:var(--accent);
+  font-weight:800;
+}
+
+.total{
+  text-align:right;
+  padding:14px;
+  font-weight:850;
+}
+
+.side{
+  padding:16px;
+  margin-bottom:16px;
+}
+
+.side h3{
+  font-size:20px;
+  margin-bottom:12px;
+}
+
+.note{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.55;
+}
+
+.foodrow{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  border-bottom:1px solid #eee8df;
+  padding:9px 0;
+  font-size:12px;
+}
+
+.bar{
+  height:8px;
+  background:#ece6dc;
+  border-radius:20px;
+  overflow:hidden;
+  margin:7px 0;
+}
+
+.fill{
+  height:100%;
+  background:var(--accent);
+}
+
+.green{
+  background:var(--green);
+}
+ */
