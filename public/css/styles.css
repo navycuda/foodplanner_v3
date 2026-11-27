@@ -125,6 +125,26 @@ planner-day{
   border: 1px solid var(--line);
 }
 
+planner-day.today{
+  border-color: var(--accent);
+}
+
+.week-kcal{
+  font-weight:400;
+  color:var(--muted);
+  font-size:0.95rem;
+}
+
+.day-kcal{
+  margin:0.25rem 0 0.5rem;
+  font-weight:700;
+}
+
+.dish{
+  border-top:1px solid var(--line);
+  padding:0.6rem 0;
+}
+
 
 
 

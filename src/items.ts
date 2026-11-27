@@ -14,6 +14,7 @@ import {
   unitPricePerPackage,
   type PricedLot,
 } from './math.js';
+import { reservationSnapshot, type ReservationSnapshot } from './plan.js';
 import type { ItemDetail, ItemSummary, LocationStock, LotInfo, Source, Unit } from './types.js';
 
 // Item catalog and the lots in the house.
@@ -56,9 +57,10 @@ export function registerItemRoutes(app: Express, db: DB) {
 
   app.get('/api/items', route((req, res) => {
     const location = queryString(req.query.location);
+    const reserved = reservationSnapshot(db);
     const items = all<ItemRow>(db, 'SELECT * FROM items ORDER BY name COLLATE NOCASE, id');
     const listed = items
-      .map(item => summarize(db, item))
+      .map(item => summarize(db, item, reserved))
       .filter(item => location == null || hasStockAt(item, normalizeLocation(location)));
     res.json(listed);
   }));
@@ -138,7 +140,7 @@ export function registerItemRoutes(app: Express, db: DB) {
     const item = mustItem(db, idParam(req.params.id, 'Item'));
     const lotId = insertLot(db, item, bodyObject(req.body));
     const lot = mustLot(db, item.id, lotId);
-    res.status(201).json(presentLot(item, lot, packagesFor(db, [lot.id]), todayIso()));
+    res.status(201).json(presentLot(item, lot, packagesFor(db, [lot.id]), todayIso(), reservationSnapshot(db).packageIds));
   }));
 
   app.put('/api/items/:id/lots/:lotId', route((req, res) => {
@@ -146,12 +148,19 @@ export function registerItemRoutes(app: Express, db: DB) {
     const lot = mustLot(db, item.id, idParam(req.params.lotId, 'Lot'));
     correctLot(db, item, lot, bodyObject(req.body));
     const updated = mustLot(db, item.id, lot.id);
-    res.json(presentLot(item, updated, packagesFor(db, [updated.id]), todayIso()));
+    res.json(presentLot(item, updated, packagesFor(db, [updated.id]), todayIso(), reservationSnapshot(db).packageIds));
   }));
 
   app.delete('/api/items/:id/lots/:lotId', route((req, res) => {
     const item = mustItem(db, idParam(req.params.id, 'Item'));
     const lot = mustLot(db, item.id, idParam(req.params.lotId, 'Lot'));
+    const held = get<{ n: number }>(db, `
+      SELECT COUNT(*) AS n FROM plan_entries
+      WHERE package_id IN (SELECT id FROM lot_packages WHERE lot_id = ?)
+    `, lot.id);
+    if ((held?.n ?? 0) > 0) {
+      throw new HttpError(409, 'A planned meal is thawing a package from this lot. Take it off the day first.');
+    }
     db.prepare('DELETE FROM lots WHERE id = ?').run(lot.id);
     res.json({ ok: true });
   }));
@@ -165,7 +174,8 @@ export function registerItemRoutes(app: Express, db: DB) {
     const row = get<PackageRow>(db, 'SELECT * FROM lot_packages WHERE id = ? AND lot_id = ?', packageId, lot.id);
     if (!row) throw new HttpError(404, 'Package not found.');
     db.prepare('UPDATE lot_packages SET weight_g = ? WHERE id = ?').run(weight, row.id);
-    res.json({ id: row.id, weight_g: weight, reserved: false });
+    const reserved = reservationSnapshot(db).packageIds.has(row.id);
+    res.json({ id: row.id, weight_g: weight, reserved });
   }));
 
   app.put('/api/items/:id/count', route((req, res) => {
@@ -176,17 +186,19 @@ export function registerItemRoutes(app: Express, db: DB) {
 }
 
 export function itemSummaries(db: DB): ItemSummary[] {
+  const reserved = reservationSnapshot(db);
   const items = all<ItemRow>(db, 'SELECT * FROM items ORDER BY name COLLATE NOCASE, id');
-  return items.map(item => summarize(db, item));
+  return items.map(item => summarize(db, item, reserved));
 }
 
-function summarize(db: DB, item: ItemRow): ItemSummary {
+function summarize(db: DB, item: ItemRow, reserved: ReservationSnapshot): ItemSummary {
   const lots = all<LotRow>(db, 'SELECT * FROM lots WHERE item_id = ?', item.id);
   const packages = packagesFor(db, lots.map(lot => lot.id));
-  return presentSummary(item, lots, packages);
+  return presentSummary(item, lots, packages, reserved);
 }
 
 function detail(db: DB, item: ItemRow): ItemDetail {
+  const reserved = reservationSnapshot(db);
   const lots = all<LotRow>(db, 'SELECT * FROM lots WHERE item_id = ?', item.id);
   const packages = packagesFor(db, lots.map(lot => lot.id));
   const today = todayIso();
@@ -198,12 +210,12 @@ function detail(db: DB, item: ItemRow): ItemDetail {
     return compareUseFirst(a, b, item.shelf_life_days);
   });
   return {
-    ...presentSummary(item, lots, packages),
-    lots: ordered.map(lot => presentLot(item, lot, packagesByLot.get(lot.id) ?? [], today)),
+    ...presentSummary(item, lots, packages, reserved),
+    lots: ordered.map(lot => presentLot(item, lot, packagesByLot.get(lot.id) ?? [], today, reserved.packageIds)),
   };
 }
 
-function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[]): ItemSummary {
+function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[], reserved: ReservationSnapshot): ItemSummary {
   const today = todayIso();
   const packagesByLot = groupPackages(packages);
   const places = new Map<string, { quantity: number; packages: number; grams: number }>();
@@ -262,9 +274,9 @@ function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[]): 
     id: lot.id,
   }));
 
-  // Reservations arrive with the meal plan. Until then, available is on-hand.
-  const reserved = 0;
-  const available = onHand - reserved;
+  // Planned dishes hold this much. Available is what a later dish can still use.
+  const reservedQty = reserved.byItem.get(item.id) ?? 0;
+  const available = onHand - reservedQty;
   return {
     id: item.id,
     name: item.name,
@@ -276,7 +288,7 @@ function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[]): 
     shelf_life_days: item.shelf_life_days,
     notes: item.notes,
     on_hand: onHand,
-    reserved,
+    reserved: reservedQty,
     available,
     below_min: item.min_stock != null && available < item.min_stock,
     above_max: item.max_stock != null && available > item.max_stock,
@@ -288,7 +300,7 @@ function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[]): 
   };
 }
 
-function presentLot(item: ItemRow, lot: LotRow, packages: PackageRow[], today: string): LotInfo {
+function presentLot(item: ItemRow, lot: LotRow, packages: PackageRow[], today: string, held: Set<number>): LotInfo {
   const expiry = expiryDate(lot.added_on, item.shelf_life_days);
   const stocked = lot.location === 'freezer' ? packages.length > 0 : (lot.quantity ?? 0) > 0;
   const price = lot.source === 'homestead' ? null : lot.total_price;
@@ -305,7 +317,7 @@ function presentLot(item: ItemRow, lot: LotRow, packages: PackageRow[], today: s
     unit_price_per_package: unitPricePerPackage(price, lot.package_count),
     expiry,
     use_soon: stocked && isUseSoon(expiry, today),
-    packages: packages.map(row => ({ id: row.id, weight_g: row.weight_g, reserved: false })),
+    packages: packages.map(row => ({ id: row.id, weight_g: row.weight_g, reserved: held.has(row.id) })),
   };
 }
 
@@ -437,7 +449,8 @@ function setLooseCount(db: DB, item: ItemRow, location: string | null, target: n
     return;
   }
 
-  // Slice 3 will skip amounts a planned meal is still holding, unless the count cannot be met otherwise.
+  // Reservations are a total, not a pin on one lot. The count still wins. If it
+  // lands below what the plan is holding, available goes negative.
   let remove = onHand - target;
   const ordered = [...lots].sort((a, b) => compareUseFirst(a, b, item.shelf_life_days));
   const update = db.prepare('UPDATE lots SET quantity = ? WHERE id = ?');
@@ -471,17 +484,26 @@ function setFreezerCount(db: DB, item: ItemRow, target: number) {
     return;
   }
 
-  // Which physical package left is not recorded. Oldest lot first, newest row inside that lot.
+  // Drop packages a meal is not holding first. A thawed package goes only if the
+  // count cannot be met otherwise, and that dish stops pointing at it.
   let drop = packages.length - target;
+  const heldIds = reservationSnapshot(db).packageIds;
   const ordered = [...lots].sort((a, b) => compareUseFirst(a, b, item.shelf_life_days));
-  const remove = db.prepare('DELETE FROM lot_packages WHERE id = ?');
-  for (const lot of ordered) {
-    const rows = packages.filter(row => row.lot_id === lot.id).sort((a, b) => b.id - a.id);
-    for (const row of rows) {
-      if (drop <= 0) return;
-      remove.run(row.id);
-      drop -= 1;
+  const queue: PackageRow[] = [];
+  for (const held of [false, true]) {
+    for (const lot of ordered) {
+      const rows = packages.filter(row => row.lot_id === lot.id && heldIds.has(row.id) === held);
+      rows.sort((a, b) => b.id - a.id);
+      queue.push(...rows);
     }
+  }
+  const clear = db.prepare('UPDATE plan_entries SET package_id = NULL WHERE package_id = ?');
+  const remove = db.prepare('DELETE FROM lot_packages WHERE id = ?');
+  for (const row of queue) {
+    if (drop <= 0) return;
+    if (heldIds.has(row.id)) clear.run(row.id);
+    remove.run(row.id);
+    drop -= 1;
   }
 }
 

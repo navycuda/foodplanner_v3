@@ -130,3 +130,31 @@ export type RecipeDetail = RecipeSummary & {
   /** Full batch when no query was sent. Otherwise the asked amount or the thawed package. */
   portion: RecipePortion;
 };
+
+export type MealType = 'candy' | 'dinner' | 'breakfast' | 'lunch' | 'for_stock';
+
+export type PlanDish = {
+  id: number;
+  date: string;
+  recipe_id: number;
+  recipe_name: string;
+  quantity_g: number;
+  meal_type: MealType;
+  status: 'planned' | 'deducted';
+  editable: boolean;
+  kcal: number;
+  use_soon: boolean;
+  /** False when an earlier planned dish is already holding what this one needs. */
+  can_make: boolean;
+  /** The package that set the cooked weight, when they chose one. */
+  package: { id: number; weight_g: number; item_name: string } | null;
+  /** Whole freezer packages this dish is holding, including one it thawed. */
+  held_packages: { id: number; weight_g: number; item_name: string }[];
+  shortfalls: Array<{
+    item_id: number;
+    name: string;
+    unit: Unit;
+    needed: number;
+    short_by: number;
+  }>;
+};

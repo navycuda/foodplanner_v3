@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { openDatabase } from './db.js';
 import { registerItemRoutes } from './items.js';
+import { registerPlanRoutes } from './plan.js';
 import { registerRecipeRoutes } from './recipes.js';
 
 const PORT = 3000;
@@ -22,6 +23,7 @@ app.use(express.static(path.join(root, 'public')));
 
 registerItemRoutes(app, db);
 registerRecipeRoutes(app, db);
+registerPlanRoutes(app, db);
 
 app.get('/', (_req, res) => {
   res.sendFile(path.join(root, 'html', 'index.html'));

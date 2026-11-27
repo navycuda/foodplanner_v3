@@ -109,7 +109,8 @@ export function registerRecipeRoutes(app: Express, db: DB) {
 
   app.delete('/api/recipes/:id', route((req, res) => {
     const recipe = mustRecipe(db, idParam(req.params.id, 'Recipe'));
-    // Slice 3 should refuse this once a plan line points at the recipe.
+    const planned = get<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM plan_entries WHERE recipe_id = ?', recipe.id);
+    if ((planned?.n ?? 0) > 0) throw new HttpError(409, 'This recipe is on the meal plan. Take it off the day first.');
     db.prepare('DELETE FROM recipes WHERE id = ?').run(recipe.id);
     res.json({ ok: true });
   }));

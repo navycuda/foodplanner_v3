@@ -109,6 +109,20 @@ export function openDatabase(filename: string): DB {
 
     CREATE INDEX IF NOT EXISTS recipe_ingredients_recipe ON recipe_ingredients(recipe_id);
     CREATE INDEX IF NOT EXISTS recipe_ingredients_item ON recipe_ingredients(item_id);
+
+    -- One dish on a day. quantity_g is the cooked weight. package_id is set when a
+    -- thawed package chose that weight. status stays planned until slice 4 deducts it.
+    CREATE TABLE IF NOT EXISTS plan_entries (
+      id INTEGER PRIMARY KEY,
+      date TEXT NOT NULL CHECK (date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+      recipe_id INTEGER NOT NULL REFERENCES recipes(id),
+      quantity_g REAL NOT NULL CHECK (quantity_g > 0),
+      meal_type TEXT NOT NULL CHECK (meal_type IN ('candy', 'dinner', 'breakfast', 'lunch', 'for_stock')),
+      status TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'deducted')),
+      package_id INTEGER REFERENCES lot_packages(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS plan_entries_date ON plan_entries(date);
   `);
   return db;
 }
