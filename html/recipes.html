@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="stylesheet" href="css/styles.css">
-  <script type="module" src="js/common.js" defer></script>
   <script type="module" src="js/recipes.js" defer></script>
   <title>Food Planner - Recipes</title>
 </head>
@@ -20,14 +19,33 @@
       <a href="/recipes" class="active">Recipes</a>
     </nav>
 
+    <section id="recipes">
+      <h2>Recipes</h2>
+      <p class="note">One batch, as made. Amounts are raw. The cooked yield is what the pot weighs after cooking. A side is its own recipe.</p>
+      <p id="recipe_error" class="error" hidden></p>
+      <div id="recipe_list">
+        <p class="note">Loading…</p>
+      </div>
 
+      <p id="no_items" class="note" hidden>Add items on the Groceries page first. Recipes pick from that list.</p>
 
-
-
-
-
-
-
+      <form id="add_recipe" class="form" autocomplete="off">
+        <h3>Add a recipe</h3>
+        <label>Name
+          <input name="name" required maxlength="80" autocapitalize="words" placeholder="Chicken curry">
+        </label>
+        <label>Cooked yield (g)
+          <input name="cooked_yield_g" type="number" min="0" step="any" inputmode="decimal" required placeholder="1000">
+        </label>
+        <label>Notes
+          <input name="notes" maxlength="200">
+        </label>
+        <div id="add_ingredients"></div>
+        <button type="button" id="add_ingredient">Add ingredient</button>
+        <div id="add_preview" class="note"></div>
+        <button type="submit">Save recipe</button>
+      </form>
+    </section>
   </main>
 </body>
 </html>

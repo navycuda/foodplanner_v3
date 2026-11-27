@@ -1,5 +1,5 @@
-// JSON shapes for the item catalog. Computed fields are not stored.
-// Later slices add recipes, plan lines, and shopping onto these same items.
+// JSON shapes. Computed fields are not stored.
+// Plan lines and the shopping list come in later slices.
 
 export type Unit = 'g' | 'piece';
 export type Source = 'store' | 'homestead';
@@ -60,4 +60,73 @@ export type LotInfo = {
 
 export type ItemDetail = ItemSummary & {
   lots: LotInfo[];
+};
+
+export type RecipeSummary = {
+  id: number;
+  name: string;
+  cooked_yield_g: number;
+  notes: string | null;
+  /** kcal in the batch as made. */
+  kcal: number;
+  /** kcal in 100 g of the cooked yield. */
+  kcal_per_100g: number;
+  use_soon: boolean;
+  /** The batch as made fits in available stock. */
+  can_make: boolean;
+};
+
+export type RecipeIngredient = {
+  id: number;
+  item_id: number;
+  name: string;
+  unit: Unit;
+  grams_per_piece: number | null;
+  /** As-made amount, in the item's unit. */
+  quantity: number;
+  /** As-made raw grams. Pieces already converted. */
+  grams: number;
+  /** As-made kcal for this line. */
+  kcal: number;
+  kcal_per_100g: number;
+  /** Raw grams / cooked yield. Does not add to 100, because the yield is typed. */
+  ww_percent: number;
+  use_soon: boolean;
+  /** Available stock in the item's unit (on hand minus what a plan has reserved). */
+  available: number;
+  /** Remaining freezer packages, one row per distinct weight, for the thaw preview. */
+  freezer_packages: { id: number; weight_g: number }[];
+};
+
+export type RecipePortion = {
+  quantity_g: number;
+  kcal: number;
+  scale: number;
+  package_id: number | null;
+  package_weight_g: number | null;
+  can_make: boolean;
+  lines: Array<{
+    item_id: number;
+    name: string;
+    unit: Unit;
+    quantity: number;
+    grams: number;
+    kcal: number;
+    available: number;
+    enough: boolean;
+  }>;
+  shortfalls: Array<{
+    item_id: number;
+    name: string;
+    unit: Unit;
+    needed: number;
+    available: number;
+    short_by: number;
+  }>;
+};
+
+export type RecipeDetail = RecipeSummary & {
+  ingredients: RecipeIngredient[];
+  /** Full batch when no query was sent. Otherwise the asked amount or the thawed package. */
+  portion: RecipePortion;
 };

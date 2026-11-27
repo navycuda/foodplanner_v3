@@ -89,6 +89,26 @@ export function openDatabase(filename: string): DB {
 
     CREATE INDEX IF NOT EXISTS lots_item ON lots(item_id);
     CREATE INDEX IF NOT EXISTS packages_lot ON lot_packages(lot_id);
+
+    -- A recipe is one batch as made. A side is another recipe, not a field on this one.
+    -- cooked_yield_g is typed. Cooking changes the weight, so it is not the sum of the raw lines.
+    CREATE TABLE IF NOT EXISTS recipes (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      cooked_yield_g REAL NOT NULL CHECK (cooked_yield_g > 0),
+      notes TEXT
+    );
+
+    -- quantity is raw, in the item's unit (grams, or pieces). Deleted with the recipe.
+    CREATE TABLE IF NOT EXISTS recipe_ingredients (
+      id INTEGER PRIMARY KEY,
+      recipe_id INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+      item_id INTEGER NOT NULL REFERENCES items(id),
+      quantity REAL NOT NULL CHECK (quantity > 0)
+    );
+
+    CREATE INDEX IF NOT EXISTS recipe_ingredients_recipe ON recipe_ingredients(recipe_id);
+    CREATE INDEX IF NOT EXISTS recipe_ingredients_item ON recipe_ingredients(item_id);
   `);
   return db;
 }

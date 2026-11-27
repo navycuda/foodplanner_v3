@@ -74,6 +74,36 @@ export function scaleFactor(part: number, whole: number): number {
   return part / whole;
 }
 
+export type IngredientAmount = {
+  quantity: number;
+  unit: 'g' | 'piece';
+  gramsPerPiece: number | null;
+  kcalPer100g: number;
+};
+
+/** Raw grams. Pieces become grams with the item's grams-per-piece (3 eggs × 60 g). */
+export function ingredientGrams(amount: IngredientAmount): number {
+  if (amount.unit === 'g') return amount.quantity;
+  if (amount.gramsPerPiece == null || !(amount.gramsPerPiece > 0)) {
+    throw new Error('A piece amount needs grams per piece.');
+  }
+  return gramsFromPieces(amount.quantity, amount.gramsPerPiece);
+}
+
+/** Sum of ingredient kcal. Cooking does not change this; the yield only spreads it out. */
+export function batchKcal(amounts: IngredientAmount[]): number {
+  let total = 0;
+  for (const amount of amounts) {
+    total += kcalForGrams(ingredientGrams(amount), amount.kcalPer100g);
+  }
+  return total;
+}
+
+/** kcal in 100 g of the cooked yield. Yield is typed, because cooking changes the weight. */
+export function cookedKcalPer100g(totalKcal: number, cookedYieldG: number): number {
+  return totalKcal * scaleFactor(100, cookedYieldG);
+}
+
 export function formatIsoDate(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');

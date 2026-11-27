@@ -417,6 +417,11 @@ label{
   color:var(--negative);
 }
 
+.badge.ok{
+  background:#e4ebe2;
+  color:var(--green);
+}
+
 .item-name{
   font-size:1.15rem;
   font-weight:800;
@@ -426,7 +431,8 @@ label{
   margin:1rem 0 0.35rem;
 }
 
-inventory-item{
+inventory-item,
+recipe-card{
   display:block;
   background:var(--bg);
   border:1px solid var(--line);
@@ -435,14 +441,33 @@ inventory-item{
   margin:0.5rem 0;
 }
 
-inventory-item summary{
+inventory-item summary,
+recipe-card summary{
   cursor:pointer;
   min-height:44px;
 }
 
 inventory-item summary .item-name,
-inventory-item summary .line{
+inventory-item summary .line,
+recipe-card summary .item-name,
+recipe-card summary .line{
   display:block;
+}
+
+.ingredient{
+  display:flex;
+  flex-direction:column;
+  gap:0.25rem;
+  border-top:1px solid var(--line);
+  padding:0.75rem 0;
+}
+
+.preview{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:0.5rem;
+  padding:0.75rem;
+  margin:0.75rem 0;
 }
 
 .lot{
@@ -488,6 +513,13 @@ summary:focus-visible{
     gap:0.25rem;
   }
   #inventory,
-  #shopping{ max-width:42rem; }
+  #shopping,
+  #recipes{ max-width:42rem; }
   button{ width:auto; }
+  .ingredient{
+    flex-direction:row;
+    align-items:flex-end;
+  }
+  .ingredient label{ flex:1; }
+  .ingredient button{ width:auto; }
 }

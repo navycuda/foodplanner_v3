@@ -80,8 +80,14 @@ export function registerItemRoutes(app: Express, db: DB) {
   app.put('/api/items/:id', route((req, res) => {
     const item = mustItem(db, idParam(req.params.id, 'Item'));
     const input = parseItem(bodyObject(req.body));
-    if (input.unit !== item.unit && lotCount(db, item.id) > 0) {
-      throw new HttpError(409, 'Delete the lots before changing the unit.');
+    if (input.unit !== item.unit) {
+      const lots = lotCount(db, item.id) > 0;
+      const usedByRecipe = recipeCount(db, item.id) > 0;
+      if (lots && usedByRecipe) {
+        throw new HttpError(409, 'Delete the lots and take this item off any recipe before changing the unit.');
+      }
+      if (lots) throw new HttpError(409, 'Delete the lots before changing the unit.');
+      if (usedByRecipe) throw new HttpError(409, 'Take this item off any recipe before changing the unit.');
     }
     const save = db.transaction(() => {
       db.prepare(`
@@ -118,7 +124,9 @@ export function registerItemRoutes(app: Express, db: DB) {
 
   app.delete('/api/items/:id', route((req, res) => {
     const item = mustItem(db, idParam(req.params.id, 'Item'));
-    // Later slices also refuse when a recipe uses the item.
+    if (recipeCount(db, item.id) > 0) {
+      throw new HttpError(409, 'A recipe uses this item. Take it off the recipe first.');
+    }
     if (lotCount(db, item.id) > 0) {
       throw new HttpError(409, 'Delete the lots on this item first.');
     }
@@ -165,6 +173,11 @@ export function registerItemRoutes(app: Express, db: DB) {
     applyCount(db, item, bodyObject(req.body));
     res.json(detail(db, mustItem(db, item.id)));
   }));
+}
+
+export function itemSummaries(db: DB): ItemSummary[] {
+  const items = all<ItemRow>(db, 'SELECT * FROM items ORDER BY name COLLATE NOCASE, id');
+  return items.map(item => summarize(db, item));
 }
 
 function summarize(db: DB, item: ItemRow): ItemSummary {
@@ -616,6 +629,11 @@ function packagesFor(db: DB, lotIds: number[]): PackageRow[] {
 
 function lotCount(db: DB, itemId: number): number {
   const row = get<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM lots WHERE item_id = ?', itemId);
+  return row?.n ?? 0;
+}
+
+function recipeCount(db: DB, itemId: number): number {
+  const row = get<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM recipe_ingredients WHERE item_id = ?', itemId);
   return row?.n ?? 0;
 }
 
