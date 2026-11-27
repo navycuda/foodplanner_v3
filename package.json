@@ -25,7 +25,7 @@
   "contributors": [],
   "scripts": {
     "dev": "tsc && node dist/server.js",
-    "test": "tsc && node dist/math.test.js && node dist/allocate.test.js"
+    "test": "tsc && node dist/math.test.js && node dist/allocate.test.js && node dist/consume.test.js"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",

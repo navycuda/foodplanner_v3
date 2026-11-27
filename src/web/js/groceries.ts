@@ -2,6 +2,7 @@ import type { ItemSummary } from '../../types.js';
 import { api, getElementByIdOrThrow } from './common.js';
 import InventoryItem from './components/InventoryItem.js';
 import { readItemForm, syncPieceField } from './itemForm.js';
+import { mountShopping } from './shopping.js';
 
 const list = getElementByIdOrThrow('item_list');
 const error = getElementByIdOrThrow<HTMLParagraphElement>('inventory_error');
@@ -85,3 +86,4 @@ function showError(err: unknown) {
 }
 
 void load();
+mountShopping();

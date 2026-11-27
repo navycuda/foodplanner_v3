@@ -73,7 +73,27 @@
 
     <section id="shopping">
       <h2>Shopping</h2>
-      <p class="note">The shopping list comes later. It will use the stock and store prices recorded here.</p>
+      <p class="note">From today forward: what the plan cannot cover, and anything under its minimum, topped up toward the maximum. Prices are CAD from the latest store purchase. Homestead food has no price.</p>
+      <p id="shopping_error" class="error" hidden></p>
+      <p id="shopping_total"></p>
+      <div id="shopping_list"></div>
+      <button type="button" id="shopping_generate">Update from the plan</button>
+      <h3>Add an extra</h3>
+      <form id="shopping_add" class="form" autocomplete="off">
+        <label>Name
+          <input name="name" required maxlength="80">
+        </label>
+        <label>Quantity
+          <input name="quantity" type="number" min="0" step="any" inputmode="decimal" required>
+        </label>
+        <label>Unit
+          <select name="unit">
+            <option value="g">Grams</option>
+            <option value="piece">Pieces</option>
+          </select>
+        </label>
+        <button type="submit">Add to the list</button>
+      </form>
     </section>
   </main>
 </body>

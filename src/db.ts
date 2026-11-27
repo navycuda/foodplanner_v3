@@ -123,6 +123,29 @@ export function openDatabase(filename: string): DB {
     );
 
     CREATE INDEX IF NOT EXISTS plan_entries_date ON plan_entries(date);
+
+    -- What a past dish actually took off the shelf, in the item's unit.
+    -- Use rate is the sum of these divided by the days since the first one.
+    CREATE TABLE IF NOT EXISTS consumption (
+      id INTEGER PRIMARY KEY,
+      item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+      deducted_on TEXT NOT NULL,
+      quantity REAL NOT NULL CHECK (quantity > 0),
+      plan_entry_id INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS consumption_item ON consumption(item_id);
+
+    -- Generated lines are rebuilt from the plan and min/max. Manual lines stay.
+    CREATE TABLE IF NOT EXISTS shopping_items (
+      id INTEGER PRIMARY KEY,
+      item_id INTEGER REFERENCES items(id) ON DELETE SET NULL,
+      name TEXT NOT NULL,
+      quantity REAL NOT NULL CHECK (quantity > 0),
+      unit TEXT NOT NULL CHECK (unit IN ('g', 'piece')),
+      checked INTEGER NOT NULL DEFAULT 0 CHECK (checked IN (0, 1)),
+      source TEXT NOT NULL CHECK (source IN ('manual', 'generated'))
+    );
   `);
   return db;
 }

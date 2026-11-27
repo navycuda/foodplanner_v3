@@ -145,6 +145,38 @@ planner-day.today{
   padding:0.6rem 0;
 }
 
+.shop-line{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  border-top:1px solid var(--line);
+  padding:0.6rem 0;
+}
+
+.shop-line input[type="checkbox"]{
+  width:28px;
+  min-height:44px;
+  flex:0 0 auto;
+}
+
+.shop-line > div{
+  flex:1;
+}
+
+.shop-line button{
+  width:auto;
+  margin-top:0;
+}
+
+.shop-line.checked{
+  opacity:0.6;
+}
+
+.shop-line.checked > div{
+  text-decoration:line-through;
+}
+
 
 
 

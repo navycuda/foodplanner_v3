@@ -3,9 +3,11 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { openDatabase } from './db.js';
+import { deductElapsed } from './deduct.js';
 import { registerItemRoutes } from './items.js';
 import { registerPlanRoutes } from './plan.js';
 import { registerRecipeRoutes } from './recipes.js';
+import { registerShoppingRoutes } from './shopping.js';
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -15,6 +17,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 
 const db = openDatabase(path.join(root, 'foodPlanner.db'));
+deductElapsed(db);
 
 const app = express();
 app.use(express.json());
@@ -24,6 +27,7 @@ app.use(express.static(path.join(root, 'public')));
 registerItemRoutes(app, db);
 registerRecipeRoutes(app, db);
 registerPlanRoutes(app, db);
+registerShoppingRoutes(app, db);
 
 app.get('/', (_req, res) => {
   res.sendFile(path.join(root, 'html', 'index.html'));

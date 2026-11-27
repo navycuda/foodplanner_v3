@@ -23,7 +23,7 @@ export type ItemSummary = {
   shelf_life_days: number | null;
   notes: string | null;
   on_hand: number;
-  /** Always 0 until planned meals reserve stock. */
+  /** Held by planned dishes from today on. */
   reserved: number;
   available: number;
   below_min: boolean;
@@ -33,6 +33,8 @@ export type ItemSummary = {
   freezer_packages: number;
   latest_store_unit_price_per_g: number | null;
   average_store_unit_price_per_g: number | null;
+  /** Deducted amount divided by the days since the first deduction. Null until something is cooked. */
+  use_per_day: number | null;
 };
 
 export type PackageInfo = {

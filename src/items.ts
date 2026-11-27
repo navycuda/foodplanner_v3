@@ -14,6 +14,8 @@ import {
   unitPricePerPackage,
   type PricedLot,
 } from './math.js';
+import { usePerDay } from './consume.js';
+import { deductElapsed } from './deduct.js';
 import { reservationSnapshot, type ReservationSnapshot } from './plan.js';
 import type { ItemDetail, ItemSummary, LocationStock, LotInfo, Source, Unit } from './types.js';
 
@@ -40,6 +42,7 @@ export function registerItemRoutes(app: Express, db: DB) {
   const route = (handler: (req: Request, res: Response) => void) => {
     return (req: Request, res: Response, next: NextFunction) => {
       try {
+        deductElapsed(db);
         handler(req, res);
       } catch (err) {
         if (err instanceof HttpError) {
@@ -58,9 +61,10 @@ export function registerItemRoutes(app: Express, db: DB) {
   app.get('/api/items', route((req, res) => {
     const location = queryString(req.query.location);
     const reserved = reservationSnapshot(db);
+    const rates = loadUseRates(db);
     const items = all<ItemRow>(db, 'SELECT * FROM items ORDER BY name COLLATE NOCASE, id');
     const listed = items
-      .map(item => summarize(db, item, reserved))
+      .map(item => summarize(db, item, reserved, rates))
       .filter(item => location == null || hasStockAt(item, normalizeLocation(location)));
     res.json(listed);
   }));
@@ -187,18 +191,20 @@ export function registerItemRoutes(app: Express, db: DB) {
 
 export function itemSummaries(db: DB): ItemSummary[] {
   const reserved = reservationSnapshot(db);
+  const rates = loadUseRates(db);
   const items = all<ItemRow>(db, 'SELECT * FROM items ORDER BY name COLLATE NOCASE, id');
-  return items.map(item => summarize(db, item, reserved));
+  return items.map(item => summarize(db, item, reserved, rates));
 }
 
-function summarize(db: DB, item: ItemRow, reserved: ReservationSnapshot): ItemSummary {
+function summarize(db: DB, item: ItemRow, reserved: ReservationSnapshot, rates: Map<number, number>): ItemSummary {
   const lots = all<LotRow>(db, 'SELECT * FROM lots WHERE item_id = ?', item.id);
   const packages = packagesFor(db, lots.map(lot => lot.id));
-  return presentSummary(item, lots, packages, reserved);
+  return presentSummary(item, lots, packages, reserved, rates.get(item.id) ?? null);
 }
 
 function detail(db: DB, item: ItemRow): ItemDetail {
   const reserved = reservationSnapshot(db);
+  const rates = loadUseRates(db);
   const lots = all<LotRow>(db, 'SELECT * FROM lots WHERE item_id = ?', item.id);
   const packages = packagesFor(db, lots.map(lot => lot.id));
   const today = todayIso();
@@ -210,12 +216,18 @@ function detail(db: DB, item: ItemRow): ItemDetail {
     return compareUseFirst(a, b, item.shelf_life_days);
   });
   return {
-    ...presentSummary(item, lots, packages, reserved),
+    ...presentSummary(item, lots, packages, reserved, rates.get(item.id) ?? null),
     lots: ordered.map(lot => presentLot(item, lot, packagesByLot.get(lot.id) ?? [], today, reserved.packageIds)),
   };
 }
 
-function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[], reserved: ReservationSnapshot): ItemSummary {
+function presentSummary(
+  item: ItemRow,
+  lots: LotRow[],
+  packages: PackageRow[],
+  reserved: ReservationSnapshot,
+  usePerDayRate: number | null,
+): ItemSummary {
   const today = todayIso();
   const packagesByLot = groupPackages(packages);
   const places = new Map<string, { quantity: number; packages: number; grams: number }>();
@@ -297,7 +309,20 @@ function presentSummary(item: ItemRow, lots: LotRow[], packages: PackageRow[], r
     freezer_packages: freezerPackages,
     latest_store_unit_price_per_g: latestStoreUnitPricePerG(priced),
     average_store_unit_price_per_g: averageStoreUnitPricePerG(priced),
+    use_per_day: usePerDayRate,
   };
+}
+
+function loadUseRates(db: DB): Map<number, number> {
+  const today = todayIso();
+  const rows = all<{ item_id: number; total: number; first_day: string }>(db, `
+    SELECT item_id, SUM(quantity) AS total, MIN(deducted_on) AS first_day
+    FROM consumption
+    GROUP BY item_id
+  `);
+  const rates = new Map<number, number>();
+  for (const row of rows) rates.set(row.item_id, usePerDay(row.total, row.first_day, today));
+  return rates;
 }
 
 function presentLot(item: ItemRow, lot: LotRow, packages: PackageRow[], today: string, held: Set<number>): LotInfo {

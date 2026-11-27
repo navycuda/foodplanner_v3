@@ -1,5 +1,6 @@
 import type { Express, NextFunction, Request, Response } from 'express';
 import { allocateDishes, mealRank, type ItemStock, type ItemTake, type PlanNeed } from './allocate.js';
+import { deductElapsed } from './deduct.js';
 import { all, get, type DB } from './db.js';
 import {
   batchKcal,
@@ -59,6 +60,17 @@ export type ReservationSnapshot = {
   packageIds: Set<number>;
 };
 
+/** Uncovered need of dishes from today on, in each item's unit. */
+export function planShortByItem(db: DB): Map<number, number> {
+  const { takes } = loadAllocation(db);
+  const map = new Map<number, number>();
+  for (const take of takes) {
+    if (!(take.shortBy > 1e-6)) continue;
+    map.set(take.itemId, (map.get(take.itemId) ?? 0) + take.shortBy);
+  }
+  return map;
+}
+
 export function reservationSnapshot(db: DB): ReservationSnapshot {
   const { takes } = loadAllocation(db);
   const byItem = new Map<number, number>();
@@ -74,6 +86,7 @@ export function registerPlanRoutes(app: Express, db: DB) {
   const route = (handler: (req: Request, res: Response) => void) => {
     return (req: Request, res: Response, next: NextFunction) => {
       try {
+        deductElapsed(db);
         handler(req, res);
       } catch (err) {
         if (err instanceof HttpError) {

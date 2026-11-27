@@ -42,6 +42,8 @@ export default class InventoryItem extends HTMLElement {
     const marks = badges(this.#item);
     if (marks) summary.append(marks);
     summary.append(el('span', 'line', `On hand ${formatQty(this.#item.on_hand, this.#item.unit)}`));
+    const levels = stockLevels(this.#item);
+    if (levels) summary.append(el('span', 'line muted', levels));
     summary.append(el('span', 'line muted', placeLine(this.#item)));
     const price = el('span', 'line muted', '');
     showFigure(
@@ -486,6 +488,14 @@ function looseWasCounted(item: ItemDetail, lot: LotInfo): boolean {
     return Math.abs(grams - lot.total_g) > 0.05;
   }
   return Math.abs((lot.quantity ?? 0) - lot.total_g) > 0.05;
+}
+
+function stockLevels(item: ItemSummary): string {
+  const bits: string[] = [];
+  if (item.min_stock != null) bits.push(`min ${formatQty(item.min_stock, item.unit)}`);
+  if (item.max_stock != null) bits.push(`max ${formatQty(item.max_stock, item.unit)}`);
+  if (item.use_per_day != null) bits.push(`about ${formatQty(item.use_per_day, item.unit)}/day`);
+  return bits.join(' · ');
 }
 
 function badges(item: ItemSummary) {
